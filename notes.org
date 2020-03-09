@@ -1,0 +1,5 @@
+* TODO add mac support
+* TODO add inotifywait
+* TODO add logging
+* TODO sync multiple repo's
+* TODO sync when network comes online (nmcli -t general status)
