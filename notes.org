@@ -1,0 +1,11 @@
+* STARTED add mac support
+- notifications working
+- inotifywait..
+* TODO add inotifywait/fswatch
+** TODO documentation: brew install fswatch and coreutils
+* TODO add logging
+* TODO sync multiple repo's
+* TODO sync when network comes online (nmcli -t general status)
+* TODO go over git-watch and take some of its nicer features
+** TODO mainly commit message based on actual changes
+* TODO Use git -c?
