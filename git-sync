@@ -34,19 +34,11 @@
 # This does not, however, indicate that syncing is at all likely to
 # succeed.
 
-# command used to auto-commit file modifications
-DEFAULT_AUTOCOMMIT_CMD="git add -u ; git commit -m \"%message\";"
-
 # command used to auto-commit all changes
-ALL_AUTOCOMMIT_CMD="git add -A ; git commit -m \"%message\";"
+AUTOCOMMIT_CMD="git add -A ; git commit -m \"%message\";"
 
 # default commit message substituted into autocommit commands
 DEFAULT_AUTOCOMMIT_MSG="changes from $(uname -n) on $(date)"
-
-
-# AUTOCOMMIT_CMD="echo \"Please commit or stash pending changes\"; exit 1;"
-# TODO mode for stash push & pop
-
 
 
 #
@@ -58,10 +50,16 @@ __log_msg()
     echo git-sync: $1
 }
 
+SYSTEM="$(uname)"
+
 __warn_msg()
 {
     __log_msg $1
-    notify-send "git-sync: $1"
+    if [[ $SYSTEM = Darwin ]]; then
+        osascript -e "display notification \"git-sync: $1\""
+    else
+        notify-send "git-sync: $1"
+    fi
 }
 
 
@@ -123,18 +121,10 @@ git_repo_state ()
 # check if we only have untouched, modified or (if configured) new files
 check_initial_file_state()
 {
-    local syncNew="$(git config --get --bool branch.$branch_name.syncNewFiles)"
-    if [ "true" == "$syncNew" ]; then
 	# allow for new files
 	if [ ! -z "$(git status --porcelain | grep -E '^[^ \?][^M\?] *')" ]; then
 	    echo "NonNewOrModified"
 	fi
-    else
-	# also bail on new files
-	if [ ! -z "$(git status --porcelain | grep -E '^[^ ][^M] *')" ]; then
-	    echo "NotOnlyModified"
-	fi
-    fi
 }
 
 # look for local changes
@@ -274,26 +264,14 @@ fi
 
 # check if we have to commit local changes, if yes, do so
 if [ ! -z "$(local_changes)" ]; then
-    autocommit_cmd=""
-    config_autocommit_cmd="$(git config --get branch.$branch_name.autocommitscript)"
-
-    # discern the three ways to auto-commit
-    if [ ! -z "$config_autocommit_cmd" ]; then
-	autocommit_cmd="$config_autocommit_cmd"
-    elif [ "true" == "$(git config --get --bool branch.$branch_name.syncNewFiles)" ]; then
-	autocommit_cmd=${ALL_AUTOCOMMIT_CMD}
-    else
-        autocommit_cmd=${DEFAULT_AUTOCOMMIT_CMD}
-    fi
-
     commit_msg="$(git config --get branch.$branch_name.syncCommitMsg)"
     if [ "" == "$commit_msg" ]; then
       commit_msg=${DEFAULT_AUTOCOMMIT_MSG}
     fi
-    autocommit_cmd=$(echo "$autocommit_cmd" | sed "s/%message/$commit_msg/")
+    autocommit_cmd=$(echo "$AUTOCOMMIT_CMD" | sed "s/%message/$commit_msg/")
 
     __log_msg "Committing local changes using ${autocommit_cmd}"
-    eval $autocommit_cmd
+    eval $AUTOCOMMIT_CMD
 
     # after autocommit, we should be clean
     rstate="$(git_repo_state)"
