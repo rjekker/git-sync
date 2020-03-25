@@ -9,3 +9,6 @@
 * TODO go over git-watch and take some of its nicer features
 ** TODO mainly commit message based on actual changes
 * TODO Use git -c?
+* WONT support stashes
+* logging of errors etc..
+** Maybe just silence git with 2>/dev/null
