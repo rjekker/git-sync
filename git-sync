@@ -63,6 +63,12 @@ __warn_msg()
 }
 
 
+__err_msg() {
+    printf "git-sync: %s\n" "$*"
+    printf "git-sync: %s\n" "$*" >&2
+    exit 1
+}
+
 # echo the git dir
 __gitdir()
 {
@@ -99,19 +105,6 @@ git_repo_state ()
 			fi
 		elif [ "true" = "$(git rev-parse --is-inside-work-tree 2>/dev/null)" ]; then
 			git diff --no-ext-diff --quiet --exit-code || echo "|DIRTY"
-#			if [ -n "${GIT_PS1_SHOWSTASHSTATE-}" ]; then
-#			        git rev-parse --verify refs/stash >/dev/null 2>&1 && s="$"
-#			fi
-#
-#			if [ -n "${GIT_PS1_SHOWUNTRACKEDFILES-}" ]; then
-#			   if [ -n "$(git ls-files --others --exclude-standard)" ]; then
-#			      u="%"
-#			   fi
-#			fi
-#
-#			if [ -n "${GIT_PS1_SHOWUPSTREAM-}" ]; then
-#				__git_ps1_show_upstream
-#			fi
 		fi
 	else
 	    echo "NOGIT"
@@ -182,14 +175,14 @@ exit_assuming_sync() {
 #
 
 # first some sanity checks
-rstate="$(git_repo_state)"
+rstate="$(git_repo_state 2>/dev/null)"
 if [[ -z "$rstate" || "|DIRTY" = "$rstate" ]]; then
     __log_msg "Preparing. Repo in $(__gitdir)"
 elif [[ "NOGIT" = "$rstate" ]] ; then
-    __log_msg "No git repository detected. Exiting."
+    __err_msg "No git repository detected. Exiting."
     exit 128 # matches git's error code
 else
-    __warn_msg "Git repo state considered unsafe for sync: $(git_repo_state)"
+    __err_msg "Git repo state considered unsafe for sync: $(git_repo_state)"
     exit 2
 fi
 
