@@ -30,6 +30,15 @@ warn()
     fi
 }
 
+error_nowarn() {
+    # Log an error and exit but don't show system notification
+    # First argument: error code
+    # All others are logged
+    retval="$1"
+    shift
+    printf "git-monitor error: %s\n" "$*" >&2; exit "$retval";
+}
+
 
 error() {
     # Log an error and exit
@@ -38,7 +47,7 @@ error() {
     retval="$1"
     shift
     warn "Error: $*"
-    printf "git-monitor error: %s\n" "$*" >&2; exit "$retval";
+    error_nowarn "$retval" "$*"
 }
 
 
@@ -58,17 +67,21 @@ wait_for_change() {
 
 ####### Main ########
 
-[[ $# -eq 1 ]] || error 1 "Need exactly 1 argument: directory to monitor"
-[[ -d $1 ]] || error 1 "Target '$1' is not a directory."
-
-
 if [[ $SYSTEM = "Darwin" ]]; then
-    command -v gtimeout || error 1 "Please install coreutils."
-    command -v fswatch || error 1 "Please install fswatch."
+    command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
+    command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
 fi
 
-msg "Syncing $1"
+[[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
+[[ -d $1 ]] || error 1 "Target '$1' is not a directory."
+
 cd "$1" || error 2 "Cannot move into target dir '$1'"
+if [[ "true" != "$(git rev-parse --is-inside-work-tree | head -1)" ]]; then
+	error 2 "Target '$1' is not a git repo"
+fi
+
+msg "Syncing $PWD"
+
 
 counter=0
 while true; do
