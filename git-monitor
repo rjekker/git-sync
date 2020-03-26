@@ -7,23 +7,39 @@
 # But the fswatch part from: https://github.com/gitwatch/gitwatch/blob/master/gitwatch.sh
 # TODO add my own license
 
-# Requirements: bash; git; coreutils on Mac OS
-
-
-
-err() { printf "%s\n" "$*" >&2; exit 1; }
-
-[[ $# -eq 1 ]] || err "Need exactly 1 argument: directory to monitor"
-[[ -d $1 ]] || err "Target $1 is not a directory."
+# Requirements: bash; git; coreutils and fswatch on Mac OS
 
 TIMEOUT=60
+PULL_PERIOD=5 # Number of times we wait for something to change locally before we try to pull
 SYSTEM="$(uname)"
-if [[ $SYSTEM = "Darwin" ]]; then
-    which gtimeout || err "Please install coreutils."
-fi
 
-echo "Syncing $1"
-cd "$1"
+msg() # log message with date
+{
+    printf "git-monitor (%s): %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+}
+
+
+warn()
+{
+    # log message and show it as a system notification
+    msg "$*"
+    if [[ $SYSTEM = Darwin ]]; then
+        osascript -e "display notification \"git-monitor: $*\"" 2> /dev/null
+    else
+        notify-send "git-monitor: $*" 2> /dev/null
+    fi
+}
+
+
+error() {
+    # Log an error and exit
+    # First argument: error code
+    # All others are logged
+    retval="$1"
+    shift
+    warn "Error: $*"
+    printf "git-monitor error: %s\n" "$*" >&2; exit "$retval";
+}
 
 
 wait_for_change() {
@@ -40,13 +56,26 @@ wait_for_change() {
 }
 
 
+####### Main ########
+
+[[ $# -eq 1 ]] || error 1 "Need exactly 1 argument: directory to monitor"
+[[ -d $1 ]] || error 1 "Target '$1' is not a directory."
+
+
+if [[ $SYSTEM = "Darwin" ]]; then
+    command -v gtimeout || error 1 "Please install coreutils."
+    command -v fswatch || error 1 "Please install fswatch."
+fi
+
+msg "Syncing $1"
+cd "$1" || error 2 "Cannot move into target dir '$1'"
+
 counter=0
 while true; do
 	changedFile=$(wait_for_change 2>/dev/null)
-	if [ -z "$changedFile" ]
-	then
+	if [[ -z "$changedFile" ]];	then
 		counter=$((counter+1))
-		if [ $counter -gt 4 ]; then
+		if [[ $counter -gt $PULL_PERIOD ]]; then
 			git-sync
 			counter=0
 		else
