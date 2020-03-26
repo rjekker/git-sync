@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+# Git Monitor
+# Based on git-sync by Simon Thum (Add URL here)
+# And the following:
+# Took this from: https://github.com/ivanmalison/dotfiles/blob/3a0c142760a930fd41441a645d78ec2a83bf7811/dotfiles/lib/bin/git_sync_directory.sh#L8
+# But the fswatch part from: https://github.com/gitwatch/gitwatch/blob/master/gitwatch.sh
+# TODO add my own license
+
+# Requirements: bash; git; coreutils on Mac OS
+
+
+
+err() { printf "%s\n" "$*" >&2; exit 1; }
+
+[[ $# -eq 1 ]] || err "Need exactly 1 argument: directory to monitor"
+[[ -d $1 ]] || err "Target $1 is not a directory."
+
+TIMEOUT=60
+SYSTEM="$(uname)"
+if [[ $SYSTEM = "Darwin" ]]; then
+    which gtimeout || err "Please install coreutils."
+fi
+
+echo "Syncing $1"
+cd "$1"
+
+
+wait_for_change() {
+    if [[ $SYSTEM != "Darwin" ]]; then
+        # Note: we timeout after 60s because we want to pull if possible
+        inotifywait . -r -e modify,move,create,delete --format "%w%f" --exclude "\.git" -t "$TIMEOUT"
+    else
+        # default events specified via a mask, see
+        # https://emcrisostomo.github.io/fswatch/doc/1.14.0/fswatch.html/Invoking-fswatch.html#Numeric-Event-Flags
+        # default of 414 = MovedTo + MovedFrom + Renamed + Removed + Updated + Created
+        #                = 256 + 128+ 16 + 8 + 4 + 2
+        gtimeout "$TIMEOUT" fswatch --recursive --event=414 --exclude "\.git"  -1 .
+    fi
+}
+
+
+counter=0
+while true; do
+	changedFile=$(wait_for_change 2>/dev/null)
+	if [ -z "$changedFile" ]
+	then
+		counter=$((counter+1))
+		if [ $counter -gt 4 ]; then
+			git-sync
+			counter=0
+		else
+			git-sync > /dev/null
+		fi
+	else
+		echo "Syncing for: $changedFile"
+		{ git check-ignore "$changedFile" > /dev/null; } || git-sync
+	fi
+done
