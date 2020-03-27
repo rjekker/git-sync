@@ -55,28 +55,33 @@ error() {
 }
 
 
-wait_for_change() {
-    # Wait for $TIMEOUT seconds for a change
-    if [[ $SYSTEM != "Darwin" ]]; then
-        inotifywait . -r -e modify,move,create,delete --format "%w%f" --exclude "\.git" -t "$TIMEOUT"
-    else
-        # default events specified via a mask, see
-        # https://emcrisostomo.github.io/fswatch/doc/1.14.0/fswatch.html/Invoking-fswatch.html#Numeric-Event-Flags
-        # default of 414 = MovedTo + MovedFrom + Renamed + Removed + Updated + Created
-        #                = 256 + 128+ 16 + 8 + 4 + 2
-        gtimeout "$TIMEOUT" fswatch --recursive --event=414 --exclude "\.git"  -1 .
+
+######## Git Repo Operations ########
+
+get_git_dir() { git rev-parse --git-dir 2>/dev/null; }
+repo_has_changes() { git status --porcelain | grep -qE '^(\?\?|[MARC] |[ MARC][MD])*'; }
+
+current_branch() {
+    # Return the current branch
+    # Or fail if no branch checked out
+    if curr=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); then
+        if [[ -n $curr && $curr != "HEAD" ]]; then
+            echo "$curr"
+            return 0
+        else
+            # head checked out or empty branch name (should not be possible)
+            return 1
+        fi
+     else
+        # Git returned error
+        return $?
     fi
 }
 
-
-get_git_dir() { git rev-parse --git-dir 2>/dev/null; }
-
-
-repo_state () {
+local_state () {
     # Returns repo state as string
-    # First argument: git directory
     local GIT_DIR
-    # Taking care to match git error code
+    # Taking care to match git errorq code
     GIT_DIR=$(get_git_dir) || error "$?" "Target '$TARGET' is not a git repo (anymore??)"
 	if [[ -f "$GIT_DIR/rebase-merge/interactive" ]]; then
 		echo "REBASE-i"
@@ -107,20 +112,46 @@ repo_state () {
 
 
 ####### Main ########
+###### Detecting changes ######
 
-if [[ $SYSTEM = "Darwin" ]]; then
-    command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
-    command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
-fi
+wait_for_change() {
+    # Wait for $TIMEOUT seconds for a change
+    if [[ $SYSTEM != "Darwin" ]]; then
+        inotifywait . -r -e modify,move,create,delete --format "%w%f" --exclude "\.git" -t "$TIMEOUT"
+    else
+        # default events specified via a mask, see
+        # https://emcrisostomo.github.io/fswatch/doc/1.14.0/fswatch.html/Invoking-fswatch.html#Numeric-Event-Flags
+        # default of 414 = MovedTo + MovedFrom + Renamed + Removed + Updated + Created
+        #                = 256 + 128+ 16 + 8 + 4 + 2
+        gtimeout "$TIMEOUT" fswatch --recursive --event=414 --exclude "\.git"  -1 .
+    fi
+}
 
-[[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
-declare -r TARGET="$1"
-[[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
+#### Other ####
 
-cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
-get_git_dir || error 2 "Target '$TARGET' is not a git repo"
+check_target() {
+    # Do some basic checks before starting
+    readlink="readlink"
+    if [[ $SYSTEM = "Darwin" ]]; then
+        command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
+        command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
+        readlink="greadlink"
+    fi
 
+    [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
+    # shellcheck disable=SC2086
+    TARGET="$($readlink -f $1)" || error_nowarn 128 "readlink failed?!"
+    [[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
+
+    cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
+    get_git_dir || error 2 "Target '$TARGET' is not a git repo"
+    current_branch || error 3 "Target '$TARGET' does not have an active branch"
+}
+
+####### Main ########
+check_target "$@" >/dev/null
 msg "Syncing $PWD"
+
 git-sync
 
 while true; do
