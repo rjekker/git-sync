@@ -11,5 +11,12 @@
 ** TODO mainly commit message based on actual changes
 * TODO Use git -c?
 * WONT support stashes
-* logging of errors etc..
+* print messages to stdout and errors to stderr
+** caller can redirect to logfile themselves
 ** Maybe just silence git with 2>/dev/null
+* TODO tray icon met status
+** Met mogelijkheid tot klikken om log te openen; folder onder sync te openen; ...?
+** linux: https://sourceforge.net/p/yad-dialog/wiki/NotificationIcon/
+** Mac:  https://github.com/matryer/bitbar#writing-plugins
+** Mac optie 2: https://www.macstories.net/mac/textbar-puts-your-text-into-the-menu-bar/
+* TODO might want to use git-toolbelt

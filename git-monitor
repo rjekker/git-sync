@@ -7,9 +7,14 @@
 # But the fswatch part from: https://github.com/gitwatch/gitwatch/blob/master/gitwatch.sh
 # TODO add my own license
 
+# NB we don't care about branches etc.
+# We simply sync the current branch with upstream
+# Any complication on git status? Just don't do anything
+
 # Requirements: bash; git; coreutils and fswatch on Mac OS
 
 declare -r TIMEOUT=60
+# shellcheck disable=SC2155
 declare -r SYSTEM="$(uname)"
 
 msg() # log message with date
