@@ -9,13 +9,19 @@
 
 # NB we don't care about branches etc.
 # We simply sync the current branch with upstream
+# So there has to be an upstream
+# And a branch on that upstream remote with same name
 # Any complication on git status? Just don't do anything
 
 # Requirements: bash; git; coreutils and fswatch on Mac OS
 
+# No windows support
+
 declare -r TIMEOUT=60
 # shellcheck disable=SC2155
 declare -r SYSTEM="$(uname)"
+
+##### Logging and Notification #####
 
 msg() # log message with date
 {
@@ -33,6 +39,7 @@ warn()
         notify-send "git-monitor: $*" 2> /dev/null
     fi
 }
+
 
 error_nowarn() {
     # Log an error and exit but don't show system notification
@@ -65,12 +72,14 @@ get_git_dir() {
 
 get_current_branch() {
     # Return the current branch or die
-    if curr=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); then
-        if [[ -n $curr && $curr != "HEAD" ]]; then
-            echo "$curr"
+    local CURR
+    if CURR=$(git rev-parse --abbrev-ref HEAD); then
+        if [[ -n $CURR && $CURR != "HEAD" ]]; then
+            echo "$CURR"
             return 0
         else
-            # head checked out or empty branch name (should not be possible)
+            # head checked out
+            # or empty branch name (should not be possible)
             error 3 "'$PWD' does not have an active branch."
         fi
      else
@@ -87,9 +96,13 @@ get_remote_branch() {
     if REMOTE=$(git config --get "branch.$BRANCH.remote"); then
 
         if [[ -n $REMOTE ]]; then
-            echo "$REMOTE/$BRANCH"
-            # TODO check this exists
-            return 0
+            # Check remote branch actually exists
+            if git show-ref --quiet --verify -- "refs/remotes/$REMOTE/$BRANCH"; then
+                echo "$REMOTE/$BRANCH"
+                return 0
+            else
+                error 3 "No branch named '$BRANCH' on remote '$REMOTE' for '$PWD'."
+            fi
         else
             error 3 "No remote configured for branch '$BRANCH' on '$PWD'."
         fi
@@ -136,8 +149,39 @@ local_state () {
 }
 
 
+sync_state () {
+    # determine sync state of repository, i.e. how the remote relates to our HEAD
+    local REMOTE COUNT
+    REMOTE=$(get_remote_branch)
+    msg "Checking difference with '$REMOTE' for '$PWD'"
+    if COUNT="$(git rev-list --count --left-right "$(get_remote_branch)"...HEAD)"; then
 
-####### Main ########
+        case "$COUNT" in
+	        "") # no upstream
+	            echo "noUpstream"
+	            return 1
+	            ;;
+	        "0	0")
+	            echo "equal"
+	            ;;
+	        "0	"*)
+	            echo "ahead"
+	            ;;
+	        *"	0")
+	            echo "behind"
+	            ;;
+	        *)
+	            echo "diverged"
+	            ;;
+        esac
+    else
+        retval="$?"
+        warn "Could not retrieve sync state of repo '$PWD'"
+        return "$retval"
+    fi
+}
+
+
 ###### Detecting changes ######
 
 wait_for_change() {
@@ -179,11 +223,8 @@ check_target() {
 }
 
 ####### Main ########
+
 check_target "$@" >/dev/null
-
-
-exit
-
 msg "Syncing $PWD"
 
 git-sync
