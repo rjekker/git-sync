@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#!/usr/bin/env bash -x
 
 # Git Monitor
 # Based on git-sync by Simon Thum (Add URL here)
@@ -149,6 +150,7 @@ check_local_state_valid () {
     if [[ -n $STATE && "Dirty" != "$STATE" ]]; then
         error 3 "Cannot sync because target is $STATE."
     fi
+    echo "$STATE"
 }
 
 
@@ -278,7 +280,7 @@ do_sync() {
     esac
     STATE=$(sync_state) || exit $?
     if [[ $STATE != "equal" ]]; then
-        error 4 "Sync failed. Please check."
+        warn "Local and remote still differ after sync. Please check."
     fi
 }
 
