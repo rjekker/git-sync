@@ -51,8 +51,8 @@ error() {
 
 
 wait_for_change() {
+    # Wait for $TIMEOUT seconds for a change
     if [[ $SYSTEM != "Darwin" ]]; then
-        # Note: we timeout after 60s because we want to pull if possible
         inotifywait . -r -e modify,move,create,delete --format "%w%f" --exclude "\.git" -t "$TIMEOUT"
     else
         # default events specified via a mask, see
