@@ -21,3 +21,8 @@
 ** Mac optie 2: https://www.macstories.net/mac/textbar-puts-your-text-into-the-menu-bar/
 * TODO might want to use git-toolbelt
 * TODO Automatically add PWD name in logging so we don't have to add it everywhere
+* Dont warn every time when network is down
+* TESTING
+- merge and conflicts
+- rebase and conflicts (how?)
+- push/fetch
