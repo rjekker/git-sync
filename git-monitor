@@ -27,7 +27,7 @@ declare -r SYSTEM="$(uname)"
 
 msg() # log message with date
 {
-    printf "git-monitor (%s): %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+    printf "git-monitor [%s] (%s): %s\n" "$TARGET" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
 
 
@@ -36,9 +36,9 @@ warn()
     # log message and show it as a system notification
     msg "$*"
     if [[ $SYSTEM = Darwin ]]; then
-        osascript -e "display notification \"git-monitor: $*\"" 2> /dev/null
+        osascript -e "display notification \"git-monitor on '$TARGET': $*\"" 2> /dev/null
     else
-        notify-send "git-monitor: $*" 2> /dev/null
+        notify-send "git-monitor on '$TARGET': $*" 2> /dev/null
     fi
 }
 
@@ -49,7 +49,7 @@ error_nowarn() {
     # All others are logged
     retval="$1"
     shift
-    printf "git-monitor error: %s\n" "$*" >&2; exit "$retval";
+    printf "git-monitor error [%s]: %s\n" "$TARGET" "$*" >&2; exit "$retval";
 }
 
 
@@ -93,14 +93,14 @@ get_current_branch() {
 
 get_remote_branch() {
     # Return remote/branch or die
-    local BRANCH REMOTE
     BRANCH=$(get_current_branch)
     if REMOTE=$(git config --get "branch.$BRANCH.remote"); then
 
         if [[ -n $REMOTE ]]; then
             # Check remote branch actually exists
             if git show-ref --quiet --verify -- "refs/remotes/$REMOTE/$BRANCH"; then
-                echo "$REMOTE/$BRANCH"
+                export REMOTE
+                export BRANCH
                 return 0
             else
                 error 3 "No branch named '$BRANCH' on remote '$REMOTE' for '$PWD'."
@@ -124,9 +124,7 @@ check_local_state_valid () {
     # Exits with an error if repo is in an unsupported state, e.g. rebasing
     local GIT_DIR STATE
     GIT_DIR=$(get_git_dir) || exit $?
-	if [[ -f "$GIT_DIR/rebase-merge/interactive" ]]; then
-		STATE="rebasing"
-	elif [[ -d "$GIT_DIR/rebase-merge" ]]; then
+	if [[ -f "$GIT_DIR/rebase-merge/interactive" || -d "$GIT_DIR/rebase-merge" ]]; then
 		STATE="rebasing"
 	else
 		if [[ -d "$GIT_DIR/rebase-apply" ]]; then
@@ -154,17 +152,50 @@ check_local_state_valid () {
 }
 
 
+fetch() {
+    get_remote_branch || exit $?
+    msg "Fetching $REMOTE $BRANCH for $PWD"
+    git fetch "$REMOTE" "$BRANCH" || warn "Cannot fetch, possibly a networking issue."
+}
+
+
+push() {
+    msg "Pushing changes..."
+	git push "$REMOTE" "$BRANCH:$BRANCH" || warn "Cannot push, possibly a networking issue."
+}
+
+
+merge() {
+    msg "Trying fast-forward..."
+    git merge --ff --ff-only "$REMOTE/$BRANCH" || error 4 "Error during merge, probably a conflict. Please fix."
+}
+
+
+rebase() {
+    msg "We have diverged. Trying to rebase..."
+	git rebase "$REMOTE/$BRANCH" || error 4 "Error during rebase, probably a conflict. Please fix."
+    # We need to check state after rebase
+    check_local_state_valid
+    if repo_has_changes; then
+        error 4 "Rebasing failed - possible conflicts. Please fix."
+    fi
+    STATE=$(sync_state) || exit $?
+    if [[ $STATE = "ahead" ]]; then
+        push
+    else
+        error 4 "Unexpected state after rebase. Please fix."
+    fi
+}
+
+
 sync_state () {
     # determine sync state of repository, i.e. how the remote relates to our HEAD
-    local REMOTE COUNT
-    REMOTE=$(get_remote_branch) || exit $?
-    msg "Checking difference with '$REMOTE' for '$PWD'"
-    if COUNT="$(git rev-list --count --left-right "$(get_remote_branch)"...HEAD)"; then
-
+    # This assumes we have already done a fetch
+    local COUNT
+    if COUNT="$(git rev-list --count --left-right "$REMOTE/$BRANCH"...HEAD)"; then
         case "$COUNT" in
-	        "") # no upstream
-	            echo "noUpstream"
-	            return 1
+	        "") # no upstream.. is this possible? get_remote_branch would fail
+	            error 3 "$REMOTE on '$PWD' has no upstream"
 	            ;;
 	        "0	0")
 	            echo "equal"
@@ -180,9 +211,13 @@ sync_state () {
 	            ;;
         esac
     else
-        retval="$?"
-        warn "Could not retrieve sync state of repo '$PWD'"
-        return "$retval"
+        error $? "Could not retrieve sync state of repo '$PWD'"
+    fi
+}
+
+commit_local_changes() {
+    if repo_has_changes; then
+        msg need to autocommit changes
     fi
 }
 
@@ -205,11 +240,35 @@ wait_for_change() {
 
 do_sync() {
     check_local_state_valid
-    sync_state
-    echo do_sync
+    msg "Syncing $PWD"
+
+    commit_local_changes
+
+    fetch
+
+    STATE=$(sync_state) || exit $?
+    case "$STATE" in
+        "equal")
+	        msg "In sync with $REMOTE"
+	        ;;
+        "ahead")
+            push
+	        ;;
+        "behind")
+            merge
+	        ;;
+        "diverged")
+            rebase
+            ;;
+    esac
+    STATE=$(sync_state) || exit $?
+    if [[ $STATE != "equal" ]]; then
+        error 4 "Sync failed. Please check."
+    fi
 }
 
-#### Other ####
+
+#### Preliminary checks ####
 
 check_target() {
     # Do some basic checks before starting
@@ -222,22 +281,18 @@ check_target() {
 
     [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
 
-    local TARGET
     TARGET="$($readlink -f "$1")" || error_nowarn 128 "readlink failed?!"
     [[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
 
     cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
+    export TARGET
 }
 
 ####### Main ########
 
 check_target "$@" >/dev/null
-msg "Syncing $PWD"
 
 while true; do
     do_sync
-	CHANGE=$(wait_for_change 2>/dev/null)
-	if [[ -z "$CHANGE" ]];	then
-        msg "Change detected: $CHANGE"
-    fi
+	wait_for_change 2>/dev/null
 done
