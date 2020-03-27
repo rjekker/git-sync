@@ -26,3 +26,4 @@
 - merge and conflicts
 - rebase and conflicts (how?)
 - push/fetch
+* BUG: Cannot stop with ctrl c anymore

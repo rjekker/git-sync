@@ -27,7 +27,7 @@ declare -r SYSTEM="$(uname)"
 
 msg() # log message with date
 {
-    printf "git-monitor [%s] (%s): %s\n" "$TARGET" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
+    printf "[%s %s] %s\n" "$TARGET" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
 
 
@@ -68,7 +68,7 @@ error() {
 
 get_git_dir() {
     # Print the git repo directory (.git) or die
-    git rev-parse --git-dir || error $? "'$PWD' is not a git repo";
+    git rev-parse --git-dir || error $? "Not a git repo";
 }
 
 
@@ -82,11 +82,11 @@ get_current_branch() {
         else
             # head checked out
             # or empty branch name (should not be possible)
-            error 3 "'$PWD' does not have an active branch."
+            error 3 "No active branch."
         fi
      else
         # Git returned error
-        error $? "Cannot get current branch for '$PWD'"
+        error $? "Cannot get active branch."
     fi
 }
 
@@ -103,14 +103,14 @@ get_remote_branch() {
                 export BRANCH
                 return 0
             else
-                error 3 "No branch named '$BRANCH' on remote '$REMOTE' for '$PWD'."
+                error 3 "No branch named '$BRANCH' on '$REMOTE'."
             fi
         else
-            error 3 "No remote configured for branch '$BRANCH' on '$PWD'."
+            error 3 "No remote configured for branch '$BRANCH'."
         fi
     else
         # Git returned error
-        error $? "Cannot get remote for branch '$BRANCH' on '$PWD'"
+        error $? "Cannot get remote for branch '$BRANCH'"
     fi
 }
 
@@ -147,14 +147,14 @@ check_local_state_valid () {
 		git diff --no-ext-diff --quiet --exit-code || STATE="Dirty"
     fi
     if [[ -n $STATE && "Dirty" != "$STATE" ]]; then
-        error 3 "Cannot sync '$PWD' because it is $STATE."
+        error 3 "Cannot sync because target is $STATE."
     fi
 }
 
 
 fetch() {
     get_remote_branch || exit $?
-    msg "Fetching $REMOTE $BRANCH for $PWD"
+    msg "Fetching $REMOTE/$BRANCH"
     git fetch "$REMOTE" "$BRANCH" || warn "Cannot fetch, possibly a networking issue."
 }
 
@@ -195,7 +195,7 @@ sync_state () {
     if COUNT="$(git rev-list --count --left-right "$REMOTE/$BRANCH"...HEAD)"; then
         case "$COUNT" in
 	        "") # no upstream.. is this possible? get_remote_branch would fail
-	            error 3 "$REMOTE on '$PWD' has no upstream"
+	            error 3 "branch '$BRANCH' has no upstream"
 	            ;;
 	        "0	0")
 	            echo "equal"
@@ -211,13 +211,28 @@ sync_state () {
 	            ;;
         esac
     else
-        error $? "Could not retrieve sync state of repo '$PWD'"
+        error $? "Could not retrieve sync state"
     fi
 }
 
 commit_local_changes() {
     if repo_has_changes; then
-        msg need to autocommit changes
+        # commit_msg="$(git config --get branch.$branch_name.syncCommitMsg)"
+        # if [ "" == "$commit_msg" ]; then
+        #     commit_msg=${DEFAULT_AUTOCOMMIT_MSG}
+        # fi
+        # autocommit_cmd=$(echo "$AUTOCOMMIT_CMD" | sed "s/%message/$commit_msg/")
+
+        # __log_msg "Committing local changes using ${autocommit_cmd}"
+        # eval $AUTOCOMMIT_CMD
+
+        # # after autocommit, we should be clean
+        # rstate="$(git_repo_state)"
+        # if [[ ! -z "$rstate" ]]; then
+	    #     __warn_msg "Auto-commit left uncommitted changes. Please add or remove them as desired and retry."
+	    #     exit 1
+        # fi}
+        echo "blarp"
     fi
 }
 
@@ -240,7 +255,7 @@ wait_for_change() {
 
 do_sync() {
     check_local_state_valid
-    msg "Syncing $PWD"
+    msg "Syncing $TARGET"
 
     commit_local_changes
 
