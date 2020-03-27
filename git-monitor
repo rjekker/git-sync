@@ -80,6 +80,26 @@ get_current_branch() {
 }
 
 
+get_remote_branch() {
+    # Return remote/branch or die
+    local BRANCH REMOTE
+    BRANCH=$(get_current_branch)
+    if REMOTE=$(git config --get "branch.$BRANCH.remote"); then
+
+        if [[ -n $REMOTE ]]; then
+            echo "$REMOTE/$BRANCH"
+            # TODO check this exists
+            return 0
+        else
+            error 3 "No remote configured for branch '$BRANCH' on '$PWD'."
+        fi
+    else
+        # Git returned error
+        error $? "Cannot get remote for branch '$BRANCH' on '$PWD'"
+    fi
+}
+
+
 repo_has_changes() {
     git status --porcelain | grep -qE '^(\?\?|[MARC] |[ MARC][MD])*';
 }
@@ -147,17 +167,23 @@ check_target() {
     [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
 
     local TARGET
-    # shellcheck disable=SC2086
-    TARGET="$($readlink -f $1)" || error_nowarn 128 "readlink failed?!"
+    TARGET="$($readlink -f "$1")" || error_nowarn 128 "readlink failed?!"
     [[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
 
     cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
+
+    # Check some git setup things
+    # These functions will exit if things are not ok
     get_git_dir
-    get_current_branch
+    get_remote_branch
 }
 
 ####### Main ########
 check_target "$@" >/dev/null
+
+
+exit
+
 msg "Syncing $PWD"
 
 git-sync
