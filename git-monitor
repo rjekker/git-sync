@@ -79,19 +79,12 @@ cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
 get_git_dir || error 2 "Target '$TARGET' is not a git repo"
 
 msg "Syncing $PWD"
+git-sync
 
-
-counter=0
 while true; do
 	changedFile=$(wait_for_change 2>/dev/null)
 	if [[ -z "$changedFile" ]];	then
-		counter=$((counter+1))
-		if [[ $counter -gt $PULL_PERIOD ]]; then
-			git-sync
-			counter=0
-		else
-			git-sync > /dev/null
-		fi
+		git-sync
 	else
 		echo "Syncing for: $changedFile"
 		{ git check-ignore "$changedFile" > /dev/null; } || git-sync
