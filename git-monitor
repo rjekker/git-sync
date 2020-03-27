@@ -9,9 +9,8 @@
 
 # Requirements: bash; git; coreutils and fswatch on Mac OS
 
-TIMEOUT=60
-PULL_PERIOD=5 # Number of times we wait for something to change locally before we try to pull
-SYSTEM="$(uname)"
+declare -r TIMEOUT=60
+declare -r SYSTEM="$(uname)"
 
 msg() # log message with date
 {
@@ -73,12 +72,11 @@ if [[ $SYSTEM = "Darwin" ]]; then
 fi
 
 [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
-[[ -d $1 ]] || error 1 "Target '$1' is not a directory."
+declare -r TARGET="$1"
+[[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
 
-cd "$1" || error 2 "Cannot move into target dir '$1'"
-if [[ "true" != "$(git rev-parse --is-inside-work-tree | head -1)" ]]; then
-	error 2 "Target '$1' is not a git repo"
-fi
+cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
+get_git_dir || error 2 "Target '$TARGET' is not a git repo"
 
 msg "Syncing $PWD"
 
