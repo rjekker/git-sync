@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 
 # Git Monitor
 # Based on git-sync by Simon Thum (Add URL here)
@@ -25,14 +25,13 @@ declare -r SYSTEM="$(uname)"
 
 ##### Logging and Notification #####
 
-msg() # log message with date
-{
+msg() {
+    # log message with date
     printf "[%s %s] %s\n" "$TARGET" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
 
 
-warn()
-{
+warn() {
     # log message and show it as a system notification
     msg "$*"
     if [[ $SYSTEM = Darwin ]]; then
@@ -92,7 +91,8 @@ get_current_branch() {
 
 
 get_remote_branch() {
-    # Return remote/branch or die
+    # Detect remote/branch or die
+    # Return nothing; instead set REMOTE and BRANCH variables
     BRANCH=$(get_current_branch)
     if REMOTE=$(git config --get "branch.$BRANCH.remote"); then
 
@@ -156,7 +156,7 @@ check_local_state_valid () {
 fetch() {
     get_remote_branch || exit $?
     msg "Fetching $REMOTE/$BRANCH"
-    git fetch "$REMOTE" "$BRANCH" || warn "Cannot fetch, possibly a networking issue."
+    git fetch "$REMOTE" "$BRANCH" 2>/dev/null || warn "Cannot fetch, possibly a networking issue."
 }
 
 
