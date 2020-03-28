@@ -13,13 +13,19 @@
 # And a branch on that upstream remote with same name
 # Any complication on git status? Just don't do anything
 
+# NB purpose: single-user, small (text) docs share
+
+
 # Note: we DO auto-add new files. Maybe in the future use a limit on file size or number?
 
 # Requirements: bash; git; coreutils and fswatch on Mac OS
 
 # No windows support
 
-declare -r TIMEOUT=60
+declare -r TIMEOUT=60  # How long to wait for changes before we fetch/pull
+declare -r MAX_NEW=10  # How many new files do we auto-commit?
+declare -r MAX_NEW_SIZE=1000  # What is the max file size of new files to auto-commit (in kilobytes)?
+
 # shellcheck disable=SC2155
 declare -r SYSTEM="$(uname)"
 
@@ -116,7 +122,29 @@ get_remote_branch() {
 
 
 repo_has_changes() {
-    git status --porcelain | grep -qE '^(\?\?|[MARC] |[ MARC][MD])*';
+    git status --porcelain | grep -qE '^(\?\?|[MARC] |[ MARC][MD])*'
+}
+
+
+untracked_files() {
+    git status --porcelain | awk '$1 ~ /\?\?/ {print $2;}'
+}
+
+
+check_untracked_file_limits() {
+    # Exits with an error if newly added files exceed limits
+    FILES=$(untracked_files)
+    if [[ -n $FILES ]]; then
+        NUM=$($wc -l <<< "$FILES")
+        if [[ $NUM -gt $MAX_NEW ]]; then
+            error 6 "Too many new files ($NUM)."
+        else
+            SIZE=$(xargs "$du" -cs <<< "$FILES" | tail -1 | cut -f1)
+            if [[ $SIZE -gt $MAX_NEW_SIZE ]]; then
+                error 6 "New files are too large (${SIZE}K)."
+            fi
+        fi
+    fi
 }
 
 
@@ -252,6 +280,8 @@ make_commit_msg() {
 
 
 commit_local_changes() {
+    check_untracked_file_limits
+
     msg "Committing..."
     if repo_has_changes; then
         git add -A || warn "Cannot add all changes to commit."
@@ -312,10 +342,14 @@ do_sync() {
 check_target() {
     # Do some basic checks before starting
     readlink="readlink"
+    du="du"
+    wc="wc"
     if [[ $SYSTEM = "Darwin" ]]; then
         command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
         command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
         readlink="greadlink"
+        du="gdu"
+        wc="gwc"
     fi
 
     [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
