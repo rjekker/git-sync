@@ -291,10 +291,10 @@ make_commit_msg() {
 
 
 commit_local_changes() {
-    check_untracked_file_limits
-
     msg "Committing..."
     if repo_has_changes; then
+        check_untracked_file_limits
+
         git add -A || warn "Cannot add all changes to commit."
         git commit -m "$(make_commit_msg)" >/dev/null || error 4 "Cannot commit changes."
     fi
