@@ -7,23 +7,25 @@
 * WONT support stashes
 * WONT might want to use git-toolbelt
 * DONE Automatically add PWD name in logging so we don't have to add it everywhere
+* DONE NB commit messages are not correct yet
+* DONE BUG: Cannot stop with ctrl c anymore <- bisect, kijken wanneer het weer werkt
+* DONE Dont warn every time when network is down
+* WONT sync when network comes online (nmcli -t general status) // doen we dat niet al?
 * DONE print messages to stdout and errors to stderr
 ** caller can redirect to logfile themselves
 ** Maybe just silence git with 2>/dev/null
-* TODO sync when network comes online (nmcli -t general status) // doen we dat niet al?
 * TODO Use git -c?
 * TODO tray icon met status
 ** Met mogelijkheid tot klikken om log te openen; folder onder sync te openen; ...?
 ** linux: https://sourceforge.net/p/yad-dialog/wiki/NotificationIcon/
 ** Mac:  https://github.com/matryer/bitbar#writing-plugins
 ** Mac optie 2: https://www.macstories.net/mac/textbar-puts-your-text-into-the-menu-bar/a
-* Dont warn every time when network is down
 * TESTING
 - merge and conflicts
 - rebase and conflicts (how?)
 - push/fetch
-* BUG: Cannot stop with ctrl c anymore <- bisect, kijken wanneer het weer werkt
 * QUESTION: Really fetch every minute? Maybe use counter for that?
-* NB commit messages are not correct yet
+* one main process with forks for multiple dirs -> one taskbar icon
 * Homebrew install with requirements ;)
 * Limit number and/or size of newly added files!
+* Sync passwords and ps project
