@@ -149,7 +149,6 @@ check_local_state_valid () {
     if [[ -n $STATE && "Dirty" != "$STATE" ]]; then
         error 3 "Cannot sync because target is $STATE."
     fi
-    echo "$STATE"
 }
 
 
@@ -218,7 +217,6 @@ sync_state () {
 ###### Committing ######
 
 make_commit_msg() {
-    msg "Committing.. "
     FILES="$(git status --porcelain)" || error 5 "Cannot get git status."
     NUM=$(wc -l <<< "$FILES")
 
@@ -229,9 +227,10 @@ make_commit_msg() {
 
 
 commit_local_changes() {
+    msg "Committing..."
     if repo_has_changes; then
         git add -A || warn "Cannot add all changes to commit."
-        git commit -m "$(make_commit_msg)" || error 4 "Cannot commit changes."
+        git commit -m "$(make_commit_msg)" >/dev/null || error 4 "Cannot commit changes."
     fi
 }
 
@@ -261,7 +260,8 @@ do_sync() {
     STATE=$(sync_state) || exit $?
     case "$STATE" in
         "equal")
-	        msg "In sync with $REMOTE"
+	        msg "Nothing to do."
+            return
 	        ;;
         "ahead")
             push
@@ -276,6 +276,8 @@ do_sync() {
     STATE=$(sync_state) || exit $?
     if [[ $STATE != "equal" ]]; then
         warn "Local and remote still differ after sync. Please check."
+    else
+        msg "In sync with $REMOTE"
     fi
 }
 
