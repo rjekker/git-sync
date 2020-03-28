@@ -151,16 +151,41 @@ check_local_state_valid () {
     fi
 }
 
+# We keep track of currently occurring sync issues
+# So we don't bother the user with an endless stream of notifications
+SYNC_PROBLEMS=""
+
+sync_problems(){
+    if [[ -n $SYNC_PROBLEMS ]]; then
+        # User has had notification; just log
+        msg "$1 still failing."
+    else
+        # New problem; warn
+        warn "$1 failed, possibly a networking issue."
+        SYNC_PROBLEMS="t"
+    fi
+}
+
 
 fetch() {
     get_remote_branch || exit $?
-    git fetch "$REMOTE" "$BRANCH" 2>/dev/null || warn "Cannot fetch, possibly a networking issue."
+    if git fetch "$REMOTE" "$BRANCH" 2>/dev/null; then
+        SYNC_PROBLEMS=""
+        msg "Succes!"
+    else
+        sync_problems "Fetch"
+    fi
 }
 
 
 push() {
     msg "Pushing changes..."
-	git push "$REMOTE" "$BRANCH:$BRANCH" 2>/dev/null || warn "Cannot push, possibly a networking issue."
+    if git push "$REMOTE" "$BRANCH:$BRANCH" 2>/dev/null; then
+        SYNC_PROBLEMS=""
+        msg "Succes!"
+    else
+        sync_problems "Push"
+    fi
 }
 
 
