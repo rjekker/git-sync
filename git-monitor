@@ -26,7 +26,7 @@ declare -r SYSTEM="$(uname)"
 ##### Logging and Notification #####
 
 msg() {
-    # log message with date
+    # log message with date and target dir
     printf "[%s %s] %s\n" "$TARGET" "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
 
@@ -155,7 +155,6 @@ check_local_state_valid () {
 
 fetch() {
     get_remote_branch || exit $?
-    msg "Fetching $REMOTE/$BRANCH"
     git fetch "$REMOTE" "$BRANCH" 2>/dev/null || warn "Cannot fetch, possibly a networking issue."
 }
 
@@ -223,7 +222,7 @@ make_commit_msg() {
     FILES="$(git status --porcelain)" || error 5 "Cannot get git status."
     NUM=$(wc -l <<< "$FILES")
 
-    shopt -s extglob
+    shopt -s extglob # On Mac OS, 'wc' is padded with spaces so we remove those
     printf "Files changed: %s\n\n%s" "${NUM##+( )}" "$FILES"
     shopt -u extglob
 }
