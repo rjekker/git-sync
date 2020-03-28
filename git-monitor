@@ -271,11 +271,8 @@ sync_state () {
 
 make_commit_msg() {
     FILES="$(git status --porcelain)" || error 5 "Cannot get git status."
-    NUM=$(wc -l <<< "$FILES")
-
-    shopt -s extglob # On Mac OS, 'wc' is padded with spaces so we remove those
-    printf "Files changed: %s\n\n%s" "${NUM##+( )}" "$FILES"
-    shopt -u extglob
+    NUM=$($wc -l <<< "$FILES")
+    printf "Files changed: %s\n\n%s" "${NUM}" "$FILES"
 }
 
 
