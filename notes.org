@@ -1,29 +1,29 @@
 * WONT multiple directories - just start the script multiple times
-* STARTED add mac support
+* DONE add mac support
 - notifications working
 - inotifywait..
-* TODO add inotifywait/fswatch
-** TODO documentation: brew install fswatch and coreutils
-* TODO add logging
-* TODO Log timestamp of last operation
-* TODO sync when network comes online (nmcli -t general status)
-* TODO go over git-watch and take some of its nicer features
-** TODO mainly commit message based on actual changes
-* TODO Use git -c?
+* DONE add logging
+* DONE Log timestamp of last operation
 * WONT support stashes
-* print messages to stdout and errors to stderr
+* WONT might want to use git-toolbelt
+* DONE Automatically add PWD name in logging so we don't have to add it everywhere
+* DONE print messages to stdout and errors to stderr
 ** caller can redirect to logfile themselves
 ** Maybe just silence git with 2>/dev/null
+* TODO sync when network comes online (nmcli -t general status) // doen we dat niet al?
+* TODO Use git -c?
 * TODO tray icon met status
 ** Met mogelijkheid tot klikken om log te openen; folder onder sync te openen; ...?
 ** linux: https://sourceforge.net/p/yad-dialog/wiki/NotificationIcon/
 ** Mac:  https://github.com/matryer/bitbar#writing-plugins
-** Mac optie 2: https://www.macstories.net/mac/textbar-puts-your-text-into-the-menu-bar/
-* TODO might want to use git-toolbelt
-* TODO Automatically add PWD name in logging so we don't have to add it everywhere
+** Mac optie 2: https://www.macstories.net/mac/textbar-puts-your-text-into-the-menu-bar/a
 * Dont warn every time when network is down
 * TESTING
 - merge and conflicts
 - rebase and conflicts (how?)
 - push/fetch
 * BUG: Cannot stop with ctrl c anymore <- bisect, kijken wanneer het weer werkt
+* QUESTION: Really fetch every minute? Maybe use counter for that?
+* NB commit messages are not correct yet
+* Homebrew install with requirements ;)
+* Limit number and/or size of newly added files!

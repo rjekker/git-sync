@@ -162,7 +162,7 @@ fetch() {
 
 push() {
     msg "Pushing changes..."
-	git push "$REMOTE" "$BRANCH:$BRANCH" || warn "Cannot push, possibly a networking issue."
+	git push "$REMOTE" "$BRANCH:$BRANCH" 2>/dev/null || warn "Cannot push, possibly a networking issue."
 }
 
 
@@ -228,9 +228,9 @@ make_commit_msg() {
     shopt -u extglob
 }
 
+
 commit_local_changes() {
     if repo_has_changes; then
-
         git add -A || warn "Cannot add all changes to commit."
         git commit -m "$(make_commit_msg)" || error 4 "Cannot commit changes."
     fi
@@ -256,7 +256,6 @@ wait_for_change() {
 do_sync() {
     check_local_state_valid
 
-    msg "Syncing $TARGET"
     commit_local_changes
     fetch
 
@@ -305,6 +304,8 @@ check_target() {
 ####### Main ########
 
 check_target "$@" >/dev/null
+
+msg "Syncing $TARGET"
 
 while true; do
     do_sync
