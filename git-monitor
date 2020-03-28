@@ -218,51 +218,14 @@ sync_state () {
 
 ###### Committing ######
 
-# A function to reduce git diff output to the actual changed content, and insert file line numbers.
-# Based on "https://stackoverflow.com/a/12179492/199142" by John Mellor
-diff-lines() {
-    local path=
-    local line=
-    local previous_path=
-    while read; do
-        esc=$'\033'
-        if [[ $REPLY =~ ---\ (a/)?([^[:blank:]$esc]+).* ]]; then
-            previous_path=${BASH_REMATCH[2]}
-            continue
-        elif [[ $REPLY =~ \+\+\+\ (b/)?([^[:blank:]$esc]+).* ]]; then
-            path=${BASH_REMATCH[2]}
-        elif [[ $REPLY =~ @@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+)(,[0-9]+)?\ @@.* ]]; then
-            line=${BASH_REMATCH[2]}
-        elif [[ $REPLY =~ ^($esc\[[0-9;]+m)*([\ +-]) ]]; then
-            REPLY=${REPLY:0:150}           # limit the line width, so it fits in a single line in most git log outputs
-            if [[ "$path" == "/dev/null" ]]; then
-                echo "File $previous_path deleted or moved."
-                continue
-            else
-                echo "$path:$line: $REPLY"
-            fi
-            if [[ ${BASH_REMATCH[2]} != - ]]; then
-                ((line++))
-            fi
-        fi
-    done
-}
-
 make_commit_msg() {
-    MSG="$(git diff -U0 --color=always | diff-lines)"
-    LENGTH=$(echo -n "$MSG" | grep -c '^')
+    msg "Committing.. "
+    FILES="$(git status --porcelain)" || error 5 "Cannot get git status."
+    NUM=$(wc -l <<< "$FILES")
 
-    if [[ $LENGTH -le 10 ]]; then
-        # Use git diff as the commit msg, unless if files were added or deleted but not modified
-        if [[ -n $MSG ]]; then
-            FORMATTED_MSG="$MSG"
-        else
-            FORMATTED_MSG="New files added: $(git status -s)"
-        fi
-    else
-        FORMATTED_MSG=$(git diff --stat | grep '|')
-    fi
-    echo "$FORMATTED_MSG"
+    shopt -s extglob
+    printf "Files changed: %s\n\n%s" "${NUM##+( )}" "$FILES"
+    shopt -u extglob
 }
 
 commit_local_changes() {
