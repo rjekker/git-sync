@@ -310,5 +310,6 @@ msg "Syncing $TARGET"
 
 while true; do
     do_sync
-	wait_for_change 2>/dev/null
+	CHANGE=$(wait_for_change 2>/dev/null)
+    [[ -n $CHANGE ]] && msg "Changes detected: $CHANGE"
 done
