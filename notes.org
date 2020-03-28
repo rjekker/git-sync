@@ -24,6 +24,7 @@
 - merge and conflicts
 - rebase and conflicts (how?)
 - push/fetch
+** NB what happens when we stage files??
 * QUESTION: Really fetch every minute? Maybe use counter for that?
 * one main process with forks for multiple dirs -> one taskbar icon
 * Homebrew install with requirements ;)

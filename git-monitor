@@ -29,6 +29,20 @@ declare -r MAX_NEW_SIZE=1000  # What is the max file size of new files to auto-c
 # shellcheck disable=SC2155
 declare -r SYSTEM="$(uname)"
 
+readlink="readlink"
+du="du"
+wc="wc"
+wait_for_change="inotifywait . -r -e modify,move,create,delete --format %w%f --exclude \\.git -t $TIMEOUT"
+
+if [[ $SYSTEM = "Darwin" ]]; then
+    command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
+    command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
+    readlink="greadlink"
+    du="gdu"
+    wc="gwc"
+    wait_for_change="gtimeout $TIMEOUT fswatch --recursive --event=414 --exclude \\.git  -1 ."
+fi
+
 ##### Logging and Notification #####
 
 msg() {
@@ -198,8 +212,8 @@ sync_problems(){
 fetch() {
     get_remote_branch || exit $?
     if git fetch "$REMOTE" "$BRANCH" 2>/dev/null; then
+        [[ -n $SYNC_PROBLEMS ]] && msg "Success!"
         SYNC_PROBLEMS=""
-        msg "Succes!"
     else
         sync_problems "Fetch"
     fi
@@ -209,8 +223,8 @@ fetch() {
 push() {
     msg "Pushing changes..."
     if git push "$REMOTE" "$BRANCH:$BRANCH" 2>/dev/null; then
+        [[ -n $SYNC_PROBLEMS ]] && msg "Success!"
         SYNC_PROBLEMS=""
-        msg "Succes!"
     else
         sync_problems "Push"
     fi
@@ -286,20 +300,6 @@ commit_local_changes() {
     fi
 }
 
-###### Detecting changes ######
-
-wait_for_change() {
-    # Wait for $TIMEOUT seconds for a change
-    if [[ $SYSTEM != "Darwin" ]]; then
-        inotifywait . -r -e modify,move,create,delete --format "%w%f" --exclude "\.git" -t "$TIMEOUT"
-    else
-        # default events specified via a mask, see
-        # https://emcrisostomo.github.io/fswatch/doc/1.14.0/fswatch.html/Invoking-fswatch.html#Numeric-Event-Flags
-        # default of 414 = MovedTo + MovedFrom + Renamed + Removed + Updated + Created
-        #                = 256 + 128+ 16 + 8 + 4 + 2
-        gtimeout "$TIMEOUT" fswatch --recursive --event=414 --exclude "\.git"  -1 .
-    fi
-}
 
 #### Actual syncing ####
 
@@ -338,17 +338,6 @@ do_sync() {
 
 check_target() {
     # Do some basic checks before starting
-    readlink="readlink"
-    du="du"
-    wc="wc"
-    if [[ $SYSTEM = "Darwin" ]]; then
-        command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
-        command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
-        readlink="greadlink"
-        du="gdu"
-        wc="gwc"
-    fi
-
     [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
 
     TARGET="$($readlink -f "$1")" || error_nowarn 128 "readlink failed?!"
@@ -366,6 +355,6 @@ msg "Syncing $TARGET"
 
 while true; do
     do_sync
-	CHANGE=$(wait_for_change 2>/dev/null)
+	CHANGE=$($wait_for_change 2>/dev/null)
     [[ -n $CHANGE ]] && msg "Changes detected: $CHANGE"
 done
