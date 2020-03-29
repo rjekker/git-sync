@@ -19,7 +19,7 @@ setup() {
 
 @test "bad argument" {
     run git monitor --flarpje
-    [ $status -eq 0 ]
+    [ $status -eq 1 ]
     [[ "${lines[0]}" =~ /illegal/ ]]
 }
 
