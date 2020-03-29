@@ -5,10 +5,9 @@
 
 load utils
 
-setup() {
+#setup() {
     #export PATH="..:$PATH"
-    echo yep
-}
+#}
 
 @test "Simple repo, no remote" {
     #cd "$(repo_no_remote)"
