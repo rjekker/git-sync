@@ -126,7 +126,7 @@ get_current_branch() {
 get_remote_branch() {
     # Detect remote/branch or die
     # Return nothing; instead set REMOTE and BRANCH variables
-    BRANCH=$(get_current_branch)
+    BRANCH=$(get_current_branch) || error $? get_current_branch
     if REMOTE=$(git config --get "branch.$BRANCH.remote"); then
 
         if [[ -n $REMOTE ]]; then
