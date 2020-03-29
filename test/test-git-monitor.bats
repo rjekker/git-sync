@@ -142,7 +142,7 @@ load utils
 }
 
 
-@test "Succeed when adding over 10 files in a directory" {
+@test "Fail when adding more 10 files in a directory" {
     make_clone
     cd "$CLONE"
     mkdir flarp
@@ -153,7 +153,44 @@ load utils
     [ "$status" -eq 6 ]
 }
 
-# Test: over 10 files, in a dir
-# Test: over 10 files, in multiple dirs
 
+@test "Fail when adding more than 10 files in multiple dirs" {
+    make_clone
+    cd "$CLONE"
+    mkdir flarp
+    cd flarp
+    touch {1..4}
+    cd ..
+    mkdir florp
+    cd florp
+    touch {5..9}
+    cd ..
+    touch {10..12}
+    run git-monitor -1q
+    grep -q "Too many new files" <<< "$output"
+    [ "$status" -eq 6 ]
+}
+
+@test "Fail when exceeding size limit" {
+    make_clone
+    cd "$CLONE"
+    dd if=/dev/urandom bs=1024 count=1024 > bigfile 2>/dev/null
+    run git-monitor -1q
+    grep -q "New files are too large " <<< "$output"
+    [ "$status" -eq 6 ]
+}
+
+
+@test "Fail when exceeding size limit (multiple files/dirs)" {
+    make_clone
+    cd "$CLONE"
+    mkdir flarp
+    dd if=/dev/urandom bs=1024 count=512 > flarp/bigfile 2>/dev/null
+    mkdir florp
+    dd if=/dev/urandom bs=1024 count=512 > florp/bigfile 2>/dev/null
+
+    run git-monitor -1q
+    grep -q "New files are too large " <<< "$output"
+    [ "$status" -eq 6 ]
+}
 # Test other fail scenarios.. go over errors in script
