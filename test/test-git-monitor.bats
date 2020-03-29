@@ -15,8 +15,9 @@ setup() {
     run git-monitor -1q
     echo "hey"
     echo $output
+    [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch" ]]
     [ "$status" -eq 0 ]
-    [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch 'master'$" ]]
+
 }
 
 @test "bad argument" {
