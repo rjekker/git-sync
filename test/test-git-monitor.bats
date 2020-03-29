@@ -5,8 +5,9 @@
 
 load utils
 
-# setup() {
-# }
+setup() {
+    export PATH="..:$PATH"
+}
 
 @test "Simple repo, no remote" {
     #cd "$(repo_no_remote)"
