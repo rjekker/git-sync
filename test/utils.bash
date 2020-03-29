@@ -40,14 +40,15 @@ make_repo_no_remote() {
 
 make_clone() {
     # Clone $ORIGIN
+
     make_origin
     CLONE="$(mktempdir)"
-    git clone "$ORIGIN" "$CLONE" #>/dev/null 2>&1
+    git clone "$ORIGIN" "$CLONE" >/dev/null 2>&1
     cd "$CLONE" || exit 1
     touch empty_file
     git add . >/dev/null
-    git commit -m "inital commit" #>/dev/null
-    git push
+    git commit -m "inital commit" >/dev/null
+    git push >/dev/null 2>&1
     export CLONE
 }
 

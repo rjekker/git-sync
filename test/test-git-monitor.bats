@@ -34,6 +34,30 @@ load utils
 }
 
 
+@test "Refuse to work outside of a git repo" {
+    DIR=$(mktempdir)
+    run git-monitor -q1 "$DIR"
+    [ $status -eq 128 ]
+    grep -q "Not a git repo" <<< "$output"
+}
+
+
+@test "Refuse to work on a bare repo" {
+    make_origin
+    run git-monitor -q1 "$ORIGIN"
+    [ $status -eq 3 ]
+    grep -q "Cannot sync because target is a bare repo" <<< "$output"
+}
+
+
+@test "Refuse to work on a git dir" {
+    make_clone
+    run git-monitor -q1 "$CLONE/.git"
+    [ $status -eq 3 ]
+    grep -q "Cannot sync because target is a git-dir" <<< "$output"
+}
+
+
 @test "changing a file" {
     make_clone
     cd "$CLONE"
@@ -91,4 +115,20 @@ load utils
 
     check_repo_clean
 }
+
+
+@test "fail on detached HEAD" {
+    make_clone
+    cd "$CLONE"
+    touch new_file
+    git add . >/dev/null 2>&1
+    git commit -m "adding a file"  >/dev/null 2>&1
+    git checkout 'HEAD~1'  >/dev/null 2>&1
+    run git-monitor -q1 .
+    [ "$status" -eq 3 ]
+    grep -q "No active branch." <<< "$output"
+
+    check_repo_clean
+}
+
 # Test other fail scenarios.. go over errors in script
