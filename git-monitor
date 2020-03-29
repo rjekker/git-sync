@@ -50,8 +50,8 @@ fi
 while getopts "q1" OPTION # Process command line options
 do
     case "${OPTION}" in
-        q) QUIET="y";;
-        1) NO_LOOP="y";;
+        q) QUIET="y";;    # No notifications
+        1) NO_LOOP="y";;  # Exit after 1 sync
         *) exit 1 ;;
     esac
 done
@@ -304,10 +304,10 @@ make_commit_msg() {
 
 
 commit_local_changes() {
-    msg "Committing..."
     if repo_has_changes; then
         check_untracked_file_limits
 
+        msg "Committing..."
         git add -A || warn "Cannot add all changes to commit."
         git commit -m "$(make_commit_msg)" >/dev/null || error 4 "Cannot commit changes."
     fi
@@ -361,7 +361,7 @@ check_target() {
 
 check_target >/dev/null
 
-msg "Syncing $TARGET"
+msg "Starting sync"
 
 while true; do
     do_sync
