@@ -14,16 +14,21 @@ load utils
     [ "$status" -eq 1 ]
 }
 
+
 @test "no argument; use current dir" {
-    run git monitor --flarpje
-    grep -q illegal <<< "${lines[0]}"
-    [ "$status" -eq 1 ]
+    make_clone
+    cd "$CLONE"
+    run git-monitor -1
+    [ "$status" -eq 0 ]
+    grep -qE "^\\[$CLONE.+?] Starting sync" <<< "${lines[0]}"
+    # [ "${lines[${#lines[@]}-1]}" == "Nothing to do." ]
 }
 
 
 @test "Simple repo, no remote" {
+    make_repo_no_remote
     cd "$REPO_NO_REMOTE"
     run git-monitor -1q
-    grep -q "Cannot get remoste" <<< "$output"
+    grep -q "Cannot get remote" <<< "$output"
     [ "$status" -eq 1 ]
 }
