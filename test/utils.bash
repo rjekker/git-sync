@@ -7,7 +7,8 @@ mktempdir() {
 }
 
 
-repo_no_remote() {
+make_repo() {
+    # create a simple repo with a single commit
     set -e
     DIR=$(mktempdir)
     cd "$DIR"
@@ -20,4 +21,30 @@ repo_no_remote() {
 }
 
 
-#repo_no_remote >/dev/null 2>&1
+make_origin() {
+    # Create a repo that we can use as origin for other repos
+    set -e
+    ORIGIN="$(make_repo)"
+    export ORIGIN
+    echo "$ORIGIN"
+    set +e
+}
+
+
+repo_no_remote() {
+    # Create a repo without a remote
+    set -e
+    REPO_NO_REMOTE="$(make_repo)"
+    export REPO_NO_REMOTE
+    set +e
+}
+
+
+make_clone() {
+    # Clone $ORIGIN
+    set -e
+    CLONE="$(mktempdir)"
+    git clone "$(make_origin)" "$CLONE" >/dev/null
+    export CLONE
+    set +e
+}

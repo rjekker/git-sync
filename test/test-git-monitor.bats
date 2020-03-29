@@ -14,8 +14,15 @@ load utils
     [ "$status" -eq 1 ]
 }
 
+@test "no argument; use current dir" {
+    run git monitor --flarpje
+    grep -q illegal <<< "${lines[0]}"
+    [ "$status" -eq 1 ]
+}
+
+
 @test "Simple repo, no remote" {
-    cd "$(repo_no_remote)"
+    cd "$REPO_NO_REMOTE"
     run git-monitor -1q
     grep -q "Cannot get remote" <<< "$output"
     [ "$status" -eq 1 ]
