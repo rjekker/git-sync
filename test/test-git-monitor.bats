@@ -26,3 +26,7 @@ setup() {
     run ls
     [ $status -eq 0 ]
 }
+
+@test find {
+    which git-monitor
+}
