@@ -16,7 +16,7 @@ setup() {
     echo "hey $status"
     echo $output
     [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch" ]]
-    [ "$status" = 1 ]
+    [[ $status = 1 ]]
 }
 
 @test "bad argument" {
