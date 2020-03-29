@@ -192,6 +192,9 @@ check_local_state_valid () {
 			STATE="bisecting"
 		fi
 	fi
+    if [[ -n $STATE ]]; then
+        error 3 "Cannot sync because target in an unsupported state ($STATE)."
+    fi
 	if [[ "true" = "$(git rev-parse --is-inside-git-dir 2>/dev/null)" ]]; then
 		if [[ "true" = "$(git rev-parse --is-bare-repository 2>/dev/null)" ]]; then
 			STATE="a bare repo"

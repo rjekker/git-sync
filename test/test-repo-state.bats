@@ -9,7 +9,6 @@
 load utils
 
 
-
 @test "fail on detached HEAD" {
     make_clone
     cd "$CLONE"
@@ -31,4 +30,20 @@ load utils
     run git-monitor -1q
     grep -q "Cannot get remote" <<< "$output"
     [ "$status" -eq 1 ]
+}
+
+
+@test "Fail when repo is merging" {
+    make_repo_no_remote
+    cd "$REPO_NO_REMOTE"
+    echo "dinges 1" > empty_file
+    git checkout -b "newbranch"
+    git commit -am "."
+    git checkout master
+    echo "dinges 2" > empty_file
+    git commit -am ".."
+    git merge --no-commit newbranch || true
+    run git-monitor -1q
+    grep -q "Cannot sync because target in an unsupported state (merging." <<< "$output"
+    [ "$status" -eq 3 ]
 }
