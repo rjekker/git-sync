@@ -22,6 +22,7 @@
 
 # No windows support
 
+#### Constants ####
 declare -r TIMEOUT=60  # How long to wait for changes before we fetch/pull
 declare -r MAX_NEW=10  # How many new files do we auto-commit?
 declare -r MAX_NEW_SIZE=1000  # What is the max file size of new files to auto-commit (in kilobytes)?
@@ -29,19 +30,28 @@ declare -r MAX_NEW_SIZE=1000  # What is the max file size of new files to auto-c
 # shellcheck disable=SC2155
 declare -r SYSTEM="$(uname)"
 
+#### Detect System and dependencies ####
 readlink="readlink"
 du="du"
 wc="wc"
 wait_for_change="inotifywait . -r -e modify,move,create,delete --format %w%f --exclude \\.git -t $TIMEOUT"
 
 if [[ $SYSTEM = "Darwin" ]]; then
-    command -v gtimeout >/dev/null || error_nowarn 1 "Please install coreutils."
-    command -v fswatch >/dev/null || error_nowarn 1 "Please install fswatch."
+    command -v gtimeout >/dev/null || { echo "Please install coreutils." >&2; exit 1; }
+    command -v fswatch >/dev/null || { echo "Please install fswatch." >&2; exit 1; }
     readlink="greadlink"
     du="gdu"
     wc="gwc"
     wait_for_change="gtimeout $TIMEOUT fswatch --recursive --event=414 --exclude \\.git  -1 ."
 fi
+
+#### Check arguments ####
+[[ $# -gt 1 ]] && { echo "Don't support multiple arguments (yet)." >&2; exit 1; }
+
+# Use either $1 or "."
+TARGET="$($readlink -f "${1-.}")" || { echo "readlink failed?!" >&2; exit 1; }
+declare -r TARGET
+#### Good. Let's get started ####
 
 ##### Logging and Notification #####
 
@@ -62,24 +72,14 @@ warn() {
 }
 
 
-error_nowarn() {
-    # Log an error and exit but don't show system notification
-    # First argument: error code
-    # All others are logged
-    retval="$1"
-    shift
-    printf "git-monitor error [%s]: %s\n" "$TARGET" "$*" >&2; exit "$retval";
-}
-
-
 error() {
     # Log an error and exit
     # First argument: error code
     # All others are logged
     retval="$1"
     shift
-    warn "Error: $*"
-    error_nowarn "$retval" "$*"
+    warn "Error: $*" >&2
+    exit "$retval"
 }
 
 
@@ -338,9 +338,6 @@ do_sync() {
 
 check_target() {
     # Do some basic checks before starting
-    [[ $# -eq 1 ]] || error_nowarn 1 "Need exactly 1 argument: directory to monitor"
-
-    TARGET="$($readlink -f "$1")" || error_nowarn 128 "readlink failed?!"
     [[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
 
     cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
@@ -349,7 +346,7 @@ check_target() {
 
 ####### Main ########
 
-check_target "$@" >/dev/null
+check_target >/dev/null
 
 msg "Syncing $TARGET"
 

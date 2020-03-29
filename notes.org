@@ -10,6 +10,7 @@
 * DONE NB commit messages are not correct yet
 * DONE BUG: Cannot stop with ctrl c anymore <- bisect, kijken wanneer het weer werkt
 * DONE Dont warn every time when network is down
+* DONE Limit number and/or size of newly added files!
 * WONT sync when network comes online (nmcli -t general status) // doen we dat niet al?
 * DONE print messages to stdout and errors to stderr
 ** caller can redirect to logfile themselves
@@ -26,7 +27,9 @@
 - push/fetch
 ** NB what happens when we stage files??
 * QUESTION: Really fetch every minute? Maybe use counter for that?
-* one main process with forks for multiple dirs -> one taskbar icon
+* TODO one main process with forks for multiple dirs -> one taskbar icon
+** TODO when we have that: keep processes running on error; waiting until error is resolved
 * Homebrew install with requirements ;)
-* Limit number and/or size of newly added files!
 * Sync passwords and ps project
+* AARGH counting max_files doesnt work or at least not stop the script
+* also after sync issues I still get the message "Local and remote still differ after sync. Please check."
