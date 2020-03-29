@@ -47,11 +47,16 @@ fi
 
 #### Check arguments ####
 
-# Option "-1" or "--only-once" will sync just once and exit
-if [[ $1 = "-1" || $1 = "--only-once" ]]; then
-    NO_LOOP="true"
-    shift
-fi
+while getopts "q1" OPTION # Process command line options
+do
+    case "${OPTION}" in
+        q) QUIET="y";;
+        1) NO_LOOP="y";;
+        *) exit 1 ;;
+    esac
+done
+
+shift $((OPTIND-1))
 
 [[ $# -gt 1 ]] && { echo "Don't support multiple locations (yet)." >&2; exit 1; }
 

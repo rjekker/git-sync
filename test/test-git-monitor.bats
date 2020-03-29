@@ -10,7 +10,7 @@ load utils
 
 @test current_dir {
     cd "$REPO_NO_REMOTE" || exit 1
-    git monitor -1
+    git monitor --only-once
     [ $status -eq 0 ]
     [ "${lines[0]}" = "Syncing $DIR" ]
 }
