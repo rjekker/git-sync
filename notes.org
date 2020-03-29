@@ -35,3 +35,9 @@
 * Sync passwords and ps project
 * AARGH counting max_files doesnt work or at least not stop the script
 * also after sync issues I still get the message "Local and remote still differ after sync. Please check."
+* What are error code conventions? make sure to follow them
+- 1: invocation error
+- 2: target problem: not a repo or similar
+- 3: git problems
+- 4: networking issues
+- 6: to fix for user

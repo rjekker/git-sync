@@ -25,15 +25,6 @@ load utils
 }
 
 
-@test "Simple repo, no remote" {
-    make_repo_no_remote
-    cd "$REPO_NO_REMOTE"
-    run git-monitor -1q
-    grep -q "Cannot get remote" <<< "$output"
-    [ "$status" -eq 1 ]
-}
-
-
 @test "Refuse to work outside of a git repo" {
     DIR=$(mktempdir)
     run git-monitor -q1 "$DIR"
@@ -130,5 +121,39 @@ load utils
 
     check_repo_clean
 }
+
+
+@test "Fail when no remote" {
+    make_repo_no_remote
+    cd "$REPO_NO_REMOTE"
+    run git-monitor -1q
+    grep -q "Cannot get remote" <<< "$output"
+    [ "$status" -eq 1 ]
+}
+
+
+@test "Fail when adding over 10 files" {
+    make_clone
+    cd "$CLONE"
+    touch {1..11}
+    run git-monitor -1q
+    grep -q "Too many new files" <<< "$output"
+    [ "$status" -eq 6 ]
+}
+
+
+@test "Succeed when adding over 10 files in a directory" {
+    make_clone
+    cd "$CLONE"
+    mkdir flarp
+    cd flarp
+    touch {1..11}
+    run git-monitor -1q
+    grep -q "Too many new files" <<< "$output"
+    [ "$status" -eq 6 ]
+}
+
+# Test: over 10 files, in a dir
+# Test: over 10 files, in multiple dirs
 
 # Test other fail scenarios.. go over errors in script

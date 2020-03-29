@@ -153,14 +153,14 @@ repo_has_changes() {
 }
 
 
-untracked_files() {
-    git status --porcelain | awk '$1 ~ /\?\?/ {print $2;}'
+added_files() {
+    git status --porcelain | awk '$1 ~ "^A" { print $2 }'
 }
 
 
-check_untracked_file_limits() {
+check_add_file_limits() {
     # Exits with an error if newly added files exceed limits
-    FILES=$(untracked_files)
+    FILES=$(added_files)
     if [[ -n $FILES ]]; then
         NUM=$($wc -l <<< "$FILES")
         if [[ $NUM -gt $MAX_NEW ]]; then
@@ -297,7 +297,7 @@ sync_state () {
 ###### Committing ######
 
 make_commit_msg() {
-    FILES="$(git status --porcelain)" || error 5 "Cannot get git status."
+    FILES="$(git status --porcelain)" || error 3 "Cannot get git status."
     NUM=$($wc -l <<< "$FILES")
     printf "Files changed: %s\n\n%s" "${NUM}" "$FILES"
 }
@@ -305,10 +305,11 @@ make_commit_msg() {
 
 commit_local_changes() {
     if repo_has_changes; then
-        check_untracked_file_limits
 
         msg "Committing..."
         git add -A || warn "Cannot add all changes to commit."
+        check_add_file_limits
+
         git commit -m "$(make_commit_msg)" >/dev/null || error 4 "Cannot commit changes."
     fi
 }
@@ -351,7 +352,7 @@ do_sync() {
 
 check_target() {
     # Do some basic checks before starting
-    [[ -d $TARGET ]] || error 1 "Target '$TARGET' is not a directory."
+    [[ -d $TARGET ]] || error 2 "Target '$TARGET' is not a directory."
 
     cd "$TARGET" || error 2 "Cannot move into target dir '$TARGET'"
     export TARGET
