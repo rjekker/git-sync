@@ -180,10 +180,10 @@ check_local_state_valid () {
     local GIT_DIR STATE
     GIT_DIR=$(get_git_dir) || exit $?
 	if [[ -f "$GIT_DIR/rebase-merge/interactive" || -d "$GIT_DIR/rebase-merge" ]]; then
-		STATE="rebasing"
+		STATE="rebase"
 	else
 		if [[ -d "$GIT_DIR/rebase-apply" ]]; then
-			STATE="rebasing"
+			STATE="rebase"
 		elif [[ -f "$GIT_DIR/MERGE_HEAD" ]]; then
 			STATE="merging"
 		elif [[ -f "$GIT_DIR/CHERRY_PICK_HEAD" ]]; then
