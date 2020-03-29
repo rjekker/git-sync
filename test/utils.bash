@@ -15,17 +15,14 @@ make_repo() {
     # create a simple repo with a single commit
     DIR=$(mktempdir)
     cd "$DIR" || exit 1
-    git init . >/dev/null
-    touch empty_file
-    git add . >/dev/null
-    git commit -m "inital commit" >/dev/null
+    git init "$@" . >/dev/null
     echo "$DIR"
 }
 
 
 make_origin() {
     # Create a repo that we can use as origin for other repos
-    ORIGIN="$(make_repo)"
+    ORIGIN="$(make_repo --bare)"
     export ORIGIN
 }
 
@@ -33,6 +30,9 @@ make_origin() {
 make_repo_no_remote() {
     # Create a repo without a remote
     REPO_NO_REMOTE="$(make_repo)"
+    touch empty_file
+    git add . >/dev/null
+    git commit -m "inital commit" >/dev/null
     export REPO_NO_REMOTE
 }
 
@@ -41,6 +41,10 @@ make_clone() {
     # Clone $ORIGIN
     make_origin
     CLONE="$(mktempdir)"
-    git clone "$ORIGIN" "$CLONE" >/dev/null 2>&1
+    git clone "$ORIGIN" "$CLONE" #>/dev/null 2>&1
+    touch empty_file
+    git add . >/dev/null
+    git commit -m "inital commit" #>/dev/null
+    git push
     export CLONE
 }

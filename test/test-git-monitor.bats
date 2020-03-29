@@ -32,3 +32,20 @@ load utils
     grep -q "Cannot get remote" <<< "$output"
     [ "$status" -eq 1 ]
 }
+
+
+@test "changing a file" {
+    make_clone
+    cd "$CLONE"
+    echo "a new line" >> empty_file
+    run git-monitor -q1 . 2>&3
+    echo $output >&3
+    [ "$status" -eq 0 ]
+    grep -qE "^\\[$CLONE.+?] Starting sync" <<< "${lines[0]}"
+    grep -qE "^\\[$CLONE.+?] Committing" <<< "${lines[1]}"
+    # [ "${lines[${#lines[@]}-1]}" == "Nothing to do." ]
+    git log >&3 2>&3
+    git status >&3 2>&3
+}
+
+# Test other fail scenarios.. go over errors in script
