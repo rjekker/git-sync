@@ -18,7 +18,7 @@ load utils
 
 @test "bad argument" {
     run git monitor --flarpje
-    [ $status -eq 1 ]
+    [ $status -eq 0 ]
     [[ "${lines[0]}" =~ /illegal/ ]]
 }
 
