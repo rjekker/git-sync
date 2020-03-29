@@ -46,7 +46,14 @@ if [[ $SYSTEM = "Darwin" ]]; then
 fi
 
 #### Check arguments ####
-[[ $# -gt 1 ]] && { echo "Don't support multiple arguments (yet)." >&2; exit 1; }
+
+# Option "-1" or "--only-once" will sync just once and exit
+if [[ $1 = "-1" || $1 = "--only-once" ]]; then
+    NO_LOOP="true"
+    shift
+fi
+
+[[ $# -gt 1 ]] && { echo "Don't support multiple locations (yet)." >&2; exit 1; }
 
 # Use either $1 or "."
 TARGET="$($readlink -f "${1-.}")" || { echo "readlink failed?!" >&2; exit 1; }
@@ -352,6 +359,7 @@ msg "Syncing $TARGET"
 
 while true; do
     do_sync
+    [[ -n $NO_LOOP ]] && exit 0
 	CHANGE=$($wait_for_change 2>/dev/null)
     [[ -n $CHANGE ]] && msg "Changes detected: $CHANGE"
 done
