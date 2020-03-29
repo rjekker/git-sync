@@ -21,3 +21,7 @@ load utils
     [ $status -eq 1 ]
     [[ "${lines[0]}" =~ /illegal/ ]]
 }
+
+@test ok {
+    run ls
+}
