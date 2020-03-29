@@ -6,12 +6,13 @@
 load utils
 
 setup() {
-    export PATH="..:$PATH"
+    #export PATH="..:$PATH"
+    echo yep
 }
 
 @test "Simple repo, no remote" {
     #cd "$(repo_no_remote)"
-    run ../git-monitor -1q
+    run git-monitor -1q
     [ "$status" -eq 0 ]
     [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch 'master'$" ]]
 }
