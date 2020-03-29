@@ -24,6 +24,6 @@ load utils
 @test "Simple repo, no remote" {
     cd "$REPO_NO_REMOTE"
     run git-monitor -1q
-    grep -q "Cannot get remote" <<< "$output"
+    grep -q "Cannot get remoste" <<< "$output"
     [ "$status" -eq 1 ]
 }
