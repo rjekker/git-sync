@@ -11,13 +11,13 @@ repo_no_remote() {
     set -e
     DIR=$(mktempdir)
     cd "$DIR"
-    git init .
+    git init . >/dev/null
     touch empty_file
-    git add .
-    git commit -m "inital commit"
-    export REPO_NO_REMOTE="$DIR"
+    git add . >/dev/null
+    git commit -m "inital commit" >/dev/null
+    echo "$DIR"
     set +e
 }
 
 
-repo_no_remote >/dev/null 2>&1
+#repo_no_remote >/dev/null 2>&1

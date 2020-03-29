@@ -76,6 +76,7 @@ msg() {
 warn() {
     # log message and show it as a system notification
     msg "$*"
+    [[ -n $QUIET ]] && return 0
     if [[ $SYSTEM = Darwin ]]; then
         osascript -e "display notification \"git-monitor on '$TARGET': $*\"" 2> /dev/null
     else

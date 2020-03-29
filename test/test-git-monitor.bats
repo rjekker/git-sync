@@ -8,9 +8,16 @@ load utils
 # setup() {
 # }
 
-@test current_dir {
-    cd "$REPO_NO_REMOTE" || exit 1
-    git monitor --only-once
-    [ $status -eq 0 ]
-    [ "${lines[0]}" = "Syncing $DIR" ]
+@test "Simple repo, no remote" {
+    #cd "$(repo_no_remote)"
+    run git monitor -1q
+    #echo $status
+    #[ "$status" -eq 1 ]
+    [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch 'master'$" ]]
+}
+
+@test "bad argument" {
+    run git monitor --flarpje
+    [ $status -eq 1 ]
+    [[ "${lines[0]}" =~ /illegal/ ]]
 }
