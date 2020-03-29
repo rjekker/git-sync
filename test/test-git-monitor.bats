@@ -1,34 +1,22 @@
 #!/usr/bin/env bats
 # Unit tests for git-monitor
-# Depends on the bats testing framework: https://github.com/bats-core/bats-core
+# Depends on the bats-core testing framework: https://github.com/bats-core
+# (Note: don't accidentally install the old 'bats'; use 'bats-core')
 # On Mac OS we also assume that coreutils has been installed
+
+# Note: if we use [[ ]] for assertions bats will report the WRONG line on failure
 
 load utils
 
-#setup() {
-    #export PATH="..:$PATH"
-#}
-
-@test "Simple repo, no remote" {
-    #cd "$(repo_no_remote)"
-    run git-monitor -1q
-    echo "hey $status"
-    echo $output
-    [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch" ]]
-    [[ $status = 1 ]]
-}
-
 @test "bad argument" {
     run git monitor --flarpje
-    [ $status -eq 1 ]
-    [[ "${lines[0]}" =~ /illegal/ ]]
+    grep -q illegal <<< "${lines[0]}"
+    [ "$status" -eq 1 ]
 }
 
-@test ok {
-    run ls
-    [ $status -eq 0 ]
-}
-
-@test find {
-    which git-monitor
+@test "Simple repo, no remote" {
+    cd "$(repo_no_remote)"
+    run git-monitor -1q
+    grep -q "Cannot get remote" <<< "$output"
+    [ "$status" -eq 1 ]
 }
