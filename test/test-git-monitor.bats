@@ -12,7 +12,7 @@ setup() {
 @test "Simple repo, no remote" {
     #cd "$(repo_no_remote)"
     run git monitor -1q
-    #echo $status
+    echo $status
     #[ "$status" -eq 1 ]
     [[ "${lines[${#lines[@]}-1]}" =~ "Error: Cannot get remote for branch 'master'$" ]]
 }
