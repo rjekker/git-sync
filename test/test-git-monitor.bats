@@ -24,5 +24,5 @@ load utils
 
 @test ok {
     run ls
-    [ $status -eq 1 ]
+    [ $status -eq 0 ]
 }
