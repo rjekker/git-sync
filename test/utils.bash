@@ -30,6 +30,7 @@ make_origin() {
 make_repo_no_remote() {
     # Create a repo without a remote
     REPO_NO_REMOTE="$(make_repo)"
+    cd "$REPO_NO_REMOTE" || exit 1
     touch empty_file
     git add . >/dev/null
     git commit -m "inital commit" >/dev/null
@@ -42,9 +43,19 @@ make_clone() {
     make_origin
     CLONE="$(mktempdir)"
     git clone "$ORIGIN" "$CLONE" #>/dev/null 2>&1
+    cd "$CLONE" || exit 1
     touch empty_file
     git add . >/dev/null
     git commit -m "inital commit" #>/dev/null
     git push
     export CLONE
+}
+
+
+check_repo_clean() {
+    LOCAL=$(git status --porcelain) || exit 1
+    [ -z "$LOCAL" ]
+
+    REMOTE=$(git diff --stat origin/master) || exit 1
+    [ -z "$REMOTE" ]
 }

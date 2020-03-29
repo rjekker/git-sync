@@ -38,14 +38,57 @@ load utils
     make_clone
     cd "$CLONE"
     echo "a new line" >> empty_file
-    run git-monitor -q1 . 2>&3
-    echo $output >&3
+    run git-monitor -q1 .
     [ "$status" -eq 0 ]
     grep -qE "^\\[$CLONE.+?] Starting sync" <<< "${lines[0]}"
     grep -qE "^\\[$CLONE.+?] Committing" <<< "${lines[1]}"
-    # [ "${lines[${#lines[@]}-1]}" == "Nothing to do." ]
-    git log >&3 2>&3
-    git status >&3 2>&3
+    grep -qE "^\\[$CLONE.+?] Pushing" <<< "${lines[2]}"
+    grep -qE "^\\[$CLONE.+?] In sync with origin" <<< "${lines[3]}"
+
+    check_repo_clean
 }
 
+
+@test "deleting a file" {
+    make_clone
+    cd "$CLONE"
+    rm empty_file
+    run git-monitor -q1 .
+    [ "$status" -eq 0 ]
+    grep -qE "^\\[$CLONE.+?] Starting sync" <<< "${lines[0]}"
+    grep -qE "^\\[$CLONE.+?] Committing" <<< "${lines[1]}"
+    grep -qE "^\\[$CLONE.+?] Pushing" <<< "${lines[2]}"
+    grep -qE "^\\[$CLONE.+?] In sync with origin" <<< "${lines[3]}"
+
+    check_repo_clean
+}
+
+
+@test "moving a file" {
+    make_clone
+    cd "$CLONE"
+    mv empty_file moved_file
+    run git-monitor -q1 .
+    [ "$status" -eq 0 ]
+    grep -qE "^\\[$CLONE.+?] Starting sync" <<< "${lines[0]}"
+    grep -qE "^\\[$CLONE.+?] Committing" <<< "${lines[1]}"
+    grep -qE "^\\[$CLONE.+?] Pushing" <<< "${lines[2]}"
+    grep -qE "^\\[$CLONE.+?] In sync with origin" <<< "${lines[3]}"
+
+    check_repo_clean
+}
+
+@test "adding a file" {
+    make_clone
+    cd "$CLONE"
+    touch new_file
+    run git-monitor -q1 .
+    [ "$status" -eq 0 ]
+    grep -qE "^\\[$CLONE.+?] Starting sync" <<< "${lines[0]}"
+    grep -qE "^\\[$CLONE.+?] Committing" <<< "${lines[1]}"
+    grep -qE "^\\[$CLONE.+?] Pushing" <<< "${lines[2]}"
+    grep -qE "^\\[$CLONE.+?] In sync with origin" <<< "${lines[3]}"
+
+    check_repo_clean
+}
 # Test other fail scenarios.. go over errors in script
